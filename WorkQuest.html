@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>打工勇者传 WORK QUEST</title>
+<style>
+  :root{
+    --bg:#0e1018; --panel:#1a1f2e; --panel2:#232a3d; --line:#3a4466;
+    --ink:#e8ecf5; --sub:#9aa6c0; --cyan:#4be3d4; --pink:#ff5d9e; --gold:#ffce54; --red:#ff5f56;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:#05060a;color:var(--ink);
+    font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;overflow:hidden;user-select:none;}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+  #stage{position:relative;}
+  canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;background:#0b0e16;border-radius:6px;}
+  .ov{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;
+    padding:5%;text-align:center;}
+  .ov.show{display:flex;}
+  .scrim{background:radial-gradient(ellipse at center,rgba(10,12,22,.72),rgba(6,7,12,.94));}
+  h1{font-size:clamp(28px,6vw,56px);margin:0 0 4px;letter-spacing:6px;
+    background:linear-gradient(90deg,var(--cyan),var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .en{font-size:clamp(11px,1.8vw,16px);letter-spacing:10px;color:var(--sub);margin-bottom:30px;}
+  button{font-family:inherit;cursor:pointer;border:1px solid #46517a;background:linear-gradient(180deg,#2a3350,#20273c);
+    color:var(--ink);padding:12px 26px;border-radius:10px;font-size:16px;min-width:200px;margin:7px;transition:.12s;}
+  button:hover{border-color:var(--cyan);transform:translateY(-1px);}
+  button:active{transform:translateY(1px);}
+  button.small{min-width:0;padding:8px 14px;font-size:14px;margin:4px;}
+  /* 顶部 HUD */
+  #hud{position:absolute;top:8px;left:8px;right:8px;display:none;justify-content:space-between;pointer-events:none;
+    font-size:13px;z-index:5;}
+  #hud.show{display:flex;}
+  .chip{background:rgba(16,20,32,.82);border:1px solid #33405f;border-radius:8px;padding:6px 10px;}
+  .muteBtn{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:34px;height:34px;border-radius:50%;background:rgba(16,20,32,.82);border:1px solid #33405f;color:var(--gold);font-size:15px;cursor:pointer;z-index:6;}
+  .muteBtn.off{color:var(--sub);}
+  .bar{width:120px;height:8px;background:#2a3145;border-radius:5px;overflow:hidden;margin-top:3px;}
+  .bar i{display:block;height:100%;}
+  /* 对话框 */
+  #dlg{position:absolute;left:4%;right:4%;bottom:4%;display:none;background:rgba(14,18,30,.94);
+    border:2px solid #46517a;border-radius:12px;padding:14px 16px;z-index:8;min-height:110px;}
+  #dlg.show{display:block;}
+  #dlg .who{color:var(--cyan);font-weight:bold;margin-bottom:6px;}
+  #dlg .txt{font-size:15px;line-height:1.6;}
+  #dlg .next{position:absolute;right:12px;bottom:8px;color:var(--sub);font-size:12px;animation:blink 1s infinite;}
+  @keyframes blink{50%{opacity:.3;}}
+  /* 战斗 */
+  #battleMenu{position:absolute;left:4%;right:4%;bottom:4%;display:none;z-index:8;}
+  #battleMenu.show{display:block;}
+  .bpanel{background:rgba(14,18,30,.95);border:2px solid #46517a;border-radius:12px;padding:12px;}
+  .bgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px;}
+  .bgrid button{min-width:0;margin:0;padding:10px 6px;font-size:14px;}
+  #battleInfo{position:absolute;top:54px;left:8px;right:8px;z-index:7;font-size:13px;display:none;}
+  #battleInfo.show{display:block;}
+  .enemyCard{background:rgba(16,20,32,.82);border:1px solid #33405f;border-radius:8px;padding:6px 10px;display:inline-block;margin:2px;}
+  .sel{border-color:var(--gold)!important;box-shadow:0 0 0 2px rgba(255,206,84,.35);}
+  #toast{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(10,13,24,.92);
+    border:1px solid var(--gold);border-radius:10px;padding:10px 18px;z-index:20;display:none;font-size:15px;}
+  #toast.show{display:block;animation:fade 1.6s forwards;}
+  @keyframes fade{0%{opacity:0;}15%{opacity:1;}75%{opacity:1;}100%{opacity:0;}}
+  /* 触屏控制 */
+  #touch{position:absolute;inset:0;display:none;z-index:6;pointer-events:none;}
+  #touch.show{display:block;}
+  .tpad{position:absolute;bottom:18px;width:64px;height:64px;border-radius:50%;background:rgba(70,81,122,.28);
+    border:1px solid rgba(120,140,190,.4);pointer-events:auto;display:flex;align-items:center;justify-content:center;font-size:22px;}
+  #tUp{left:84px;bottom:84px;}#tDown{left:84px;bottom:18px;}#tLeft{left:18px;bottom:52px;}#tRight{left:150px;bottom:52px;}
+  #tAct{right:24px;bottom:40px;width:84px;height:84px;background:rgba(255,93,158,.25);border-color:var(--pink);}
+  #tOk{right:120px;bottom:120px;}
+  #shopMenu{position:absolute;left:4%;right:4%;bottom:4%;display:none;z-index:8;}
+  #shopMenu.show{display:block;}
+  #shopGrid button{position:relative;}
+  #shopGrid .cost{display:block;color:var(--gold);font-size:12px;margin-top:2px;}
+  .hint{color:var(--sub);font-size:13px;margin-top:18px;line-height:1.8;}
+</style>
+</head>
+<body>
+<div id="wrap"><div id="stage">
+  <canvas id="cv" width="960" height="540"></canvas>
+
+  <div id="hud">
+    <div class="chip">
+      <div>精神值 <span id="hpTxt"></span></div><div class="bar"><i id="hpBar" style="background:linear-gradient(90deg,#ff5f56,#ff9d5c)"></i></div>
+      <div style="margin-top:5px">咖啡因 <span id="mpTxt"></span></div><div class="bar"><i id="mpBar" style="background:linear-gradient(90deg,#4be3d4,#6aa6ff)"></i></div>
+    </div>
+    <div class="chip" style="text-align:right">
+      <div id="locTxt">办公区</div>
+      <div style="color:var(--gold);margin-top:4px">绩效 <span id="goldTxt">0</span> · Lv.<span id="lvTxt">1</span></div>
+    </div>
+    <button id="btnMute" class="muteBtn" title="声音开关">♪</button>
+  </div>
+
+  <div id="battleInfo"></div>
+
+  <div id="dlg"><div class="who" id="dlgWho"></div><div class="txt" id="dlgTxt"></div><div class="next">▼ 点击/空格继续</div></div>
+
+  <div id="battleMenu"><div class="bpanel">
+    <div id="subTitle" style="font-size:13px;color:var(--sub);margin-bottom:8px">选择行动</div>
+    <div class="bgrid" id="bgrid"></div>
+  </div></div>
+
+  <div id="shopMenu"><div class="bpanel">
+    <div id="shopTitle" style="font-size:14px;color:var(--cyan);margin-bottom:8px">茶水间小卖部</div>
+    <div class="bgrid" id="shopGrid"></div>
+    <button class="small" id="shopClose" style="margin-top:10px">离开（ESC）</button>
+  </div></div>
+
+  <div id="touch">
+    <div class="tpad" id="tUp">▲</div><div class="tpad" id="tDown">▼</div>
+    <div class="tpad" id="tLeft">◀</div><div class="tpad" id="tRight">▶</div>
+    <div class="tpad" id="tAct">确认</div>
+  </div>
+
+  <div id="toast"></div>
+
+  <!-- 标题 -->
+  <div class="ov scrim show" id="ovTitle">
+    <h1>打工勇者传</h1><div class="en">WORK QUEST</div>
+    <button id="btnStart">开始上班</button>
+    <button id="btnContinue">读取存档</button>
+    <button id="btnHelp">操作说明</button>
+    <div class="hint">方向键/WASD 移动 · 空格/回车 确认 · 鼠标点击菜单<br>手机使用虚拟按键，建议横屏游玩</div>
+  </div>
+
+  <div class="ov scrim" id="ovHelp">
+    <h1 style="font-size:34px">操作说明</h1>
+    <div class="hint" style="max-width:560px">
+      你是「魔界集团」最底层的打工勇者，打怪=完成 KPI。<br>
+      精神值归零会被「优化」，咖啡因用于释放职场技能。<br>
+      探索办公区、遭遇职场怪物、回合制战斗、升级涨工龄、攒绩效。<br>
+      键盘：WASD/方向键移动，空格/回车确认，ESC 菜单。<br>
+      手机：虚拟方向键 + 确认键，横屏体验最佳。
+    </div>
+    <button id="btnHelpBack">返回</button>
+  </div>
+
+  <div class="ov scrim" id="ovOver">
+    <h1 style="font-size:40px">你被优化了</h1>
+    <div class="en" id="overStats"></div>
+    <button id="btnRetry">重新入职</button>
+    <button id="btnOverTitle">返回标题</button>
+  </div>
+
+  <div class="ov scrim" id="ovWin">
+    <h1 style="font-size:42px">述职成功！</h1>
+    <div class="en" id="winStats"></div>
+    <div class="hint" style="max-width:600px">
+      你一路打怪、甩锅、画饼，终于在季度述职上征服了王总。<br>
+      王总热泪盈眶：「公司就需要你这样的人才！」<br>
+      于是你升职加薪——并获得了更多的 KPI。<br>
+      （打工，是一场没有终点的冒险。）
+    </div>
+    <button id="btnWinAgain">再来一局</button>
+    <button id="btnWinTitle">返回标题</button>
+  </div>
+</div></div>
+
+<script>
+"use strict";
+/* ============================================================
+   打工勇者传 WORK QUEST —— 单文件像素回合制 RPG
+   逻辑分辨率 960×540，断网可玩，PC键鼠 + 手机触屏
+============================================================ */
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+const W=cv.width,H=cv.height,TILE=24;
+const $=id=>document.getElementById(id);
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const rand=(a,b)=>a+Math.random()*(b-a);
+const rint=(a,b)=>Math.floor(rand(a,b+1));
+const pick=arr=>arr[Math.floor(Math.random()*arr.length)];
+
+/* ---------- 调色板 ---------- */
+const PAL={
+  floor1:'#171c2b',floor2:'#1b2133',floorLine:'#232b42',floorHi:'#222944',
+  wall:'#2c3550',wallTop:'#3d4a70',wallShade:'#202740',wallLine:'#242c44',wallHi:'#4a5a86',
+  desk:'#5a4632',deskTop:'#7a5e42',deskDark:'#463626',screen:'#4be3d4',screenHi:'#b8f7ef',
+  door:'#ffce54',doorDark:'#c99a35',ink:'#e8ecf5',sub:'#9aa6c0',
+  cyan:'#4be3d4',pink:'#ff5d9e',gold:'#ffce54',red:'#ff5f56',
+};
+
+/* ---------- 音频（Web Audio 原创 8-bit，无外部素材） ---------- */
+let AC=null,master=null,musicGain=null,sfxGain=null,muted=false;
+const NOTE={C3:130.8,D3:146.8,E3:164.8,F3:174.6,G3:196,A3:220,B3:246.9,
+  C4:261.6,D4:293.7,E4:329.6,F4:349.2,G4:392,A4:440,B4:493.9,
+  C5:523.3,D5:587.3,E5:659.3,F5:698.5,G5:784,A5:880,B5:987.8,C6:1046.5};
+function initAudio(){
+  if(AC)return;
+  try{
+    AC=new (window.AudioContext||window.webkitAudioContext)();
+    master=AC.createGain();master.gain.value=0.55;master.connect(AC.destination);
+    musicGain=AC.createGain();musicGain.gain.value=0.30;musicGain.connect(master);
+    sfxGain=AC.createGain();sfxGain.gain.value=0.7;sfxGain.connect(master);
+  }catch(e){}
+}
+function resumeAudio(){if(AC&&AC.state==='suspended')AC.resume();}
+function tone(freq,dur,type,vol,when){
+  if(!AC||muted)return;
+  const t=AC.currentTime+(when||0);
+  const o=AC.createOscillator(),g=AC.createGain();
+  o.type=type||'square';o.frequency.value=freq;
+  g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(vol||0.18,t+0.012);
+  g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  o.connect(g);g.connect(sfxGain);o.start(t);o.stop(t+dur+0.03);
+}
+const SFX={
+  select:()=>tone(440,0.06,'square',0.10),
+  confirm:()=>{tone(523,0.07,'square',0.14);tone(784,0.09,'square',0.12,0.05);},
+  back:()=>tone(300,0.07,'square',0.12),
+  attack:()=>tone(180,0.12,'sawtooth',0.16),
+  hit:()=>tone(120,0.18,'sawtooth',0.18),
+  heal:()=>[523,659,784].forEach((f,i)=>tone(f,0.12,'sine',0.15,i*0.07)),
+  die:()=>[400,300,200,120].forEach((f,i)=>tone(f,0.12,'square',0.14,i*0.08)),
+  gold:()=>{tone(988,0.06,'triangle',0.14);tone(1319,0.1,'triangle',0.14,0.06);},
+  level:()=>[523,659,784,1047,1319].forEach((f,i)=>tone(f,0.14,'square',0.15,i*0.09)),
+  win:()=>[523,659,784,1047].forEach((f,i)=>tone(f,0.18,'square',0.16,i*0.12)),
+  lose:()=>[392,330,262,196].forEach((f,i)=>tone(f,0.22,'sawtooth',0.15,i*0.14)),
+};
+/* BGM：lookahead 序列器，原创旋律，lead 方波 + bass 三角波 */
+const BGM={
+  map:{bpm:112,
+    lead:[NOTE.C5,0,NOTE.E5,0,NOTE.G5,0,NOTE.E5,0,NOTE.A5,0,NOTE.G5,NOTE.E5,NOTE.D5,0,NOTE.E5,0,
+          NOTE.F5,0,NOTE.E5,0,NOTE.D5,0,NOTE.E5,0,NOTE.C5,0,NOTE.G5,0,NOTE.E5,0,NOTE.C5,0],
+    bass:[NOTE.C3,0,0,0,NOTE.G3,0,0,0,NOTE.A3,0,0,0,NOTE.F3,0,NOTE.G3,0,
+          NOTE.C3,0,0,0,NOTE.G3,0,0,0,NOTE.F3,0,NOTE.G3,0,NOTE.C3,0,0,0]},
+  battle:{bpm:140,
+    lead:[NOTE.E5,NOTE.E5,0,NOTE.G5,NOTE.A5,0,NOTE.A5,0,NOTE.G5,0,NOTE.E5,0,NOTE.D5,0,NOTE.E5,0,
+          NOTE.F5,NOTE.F5,0,NOTE.E5,NOTE.D5,0,NOTE.E5,0,NOTE.G5,0,NOTE.A5,0,NOTE.B5,0,0,0],
+    bass:[NOTE.E3,0,NOTE.E3,0,NOTE.C3,0,NOTE.C3,0,NOTE.D3,0,NOTE.D3,0,NOTE.E3,0,NOTE.E3,0,
+          NOTE.F3,0,NOTE.F3,0,NOTE.E3,0,NOTE.D3,0,NOTE.C3,0,NOTE.D3,0,NOTE.E3,0,NOTE.E3,0]},
+  boss:{bpm:160,
+    lead:[NOTE.A5,0,NOTE.A5,NOTE.C6,NOTE.B5,0,NOTE.A5,0,NOTE.G5,NOTE.A5,0,NOTE.E5,NOTE.G5,0,NOTE.A5,0,
+          NOTE.C6,0,NOTE.B5,0,NOTE.A5,0,NOTE.G5,0,NOTE.A5,0,NOTE.E5,0,NOTE.G5,0,NOTE.A5,0,0,0],
+    bass:[NOTE.A3,NOTE.A3,0,NOTE.A3,NOTE.F3,NOTE.F3,0,NOTE.F3,NOTE.G3,NOTE.G3,0,NOTE.E3,NOTE.E3,NOTE.E3,0,0,
+          NOTE.A3,NOTE.A3,0,NOTE.A3,NOTE.F3,NOTE.F3,0,NOTE.F3,NOTE.G3,NOTE.G3,NOTE.E3,NOTE.E3,NOTE.A3,0,0,0]},
+};
+let bgmMode=null,bgmTimer=null,nextNoteTime=0,bgmStep=0;
+function startBGM(mode){
+  if(!AC){return;}
+  if(bgmMode===mode)return;
+  bgmMode=mode;bgmStep=0;nextNoteTime=AC.currentTime+0.08;
+  if(bgmTimer)clearInterval(bgmTimer);
+  bgmTimer=setInterval(scheduleBGM,30);
+}
+function stopBGM(){bgmMode=null;if(bgmTimer){clearInterval(bgmTimer);bgmTimer=null;}}
+function scheduleBGM(){
+  if(!bgmMode||!AC)return;
+  const b=BGM[bgmMode],step16=60/b.bpm/4;
+  while(nextNoteTime<AC.currentTime+0.12){
+    const lead=b.lead[bgmStep%b.lead.length],bass=b.bass[bgmStep%b.bass.length];
+    if(lead)bgmNote(lead,nextNoteTime,step16*0.92,'square',0.10);
+    if(bass)bgmNote(bass,nextNoteTime,step16*0.92,'triangle',0.15);
+    nextNoteTime+=step16;bgmStep=(bgmStep+1)%64;
+  }
+}
+function bgmNote(freq,t,d,type,vol){
+  if(muted)return;
+  const o=AC.createOscillator(),g=AC.createGain();
+  o.type=type;o.frequency.value=freq;
+  g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.001,t+d);
+  o.connect(g);g.connect(musicGain);o.start(t);o.stop(t+d+0.03);
+}
+function toggleMute(){muted=!muted;return muted;}
+
+/* ---------- 输入 ---------- */
+const keys={};
+const touchAxis={x:0,y:0};
+let touchConfirm=false;
+const blockedKeys=new Set(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space']);
+addEventListener('keydown',e=>{
+  initAudio();resumeAudio();
+  if(blockedKeys.has(e.code))e.preventDefault();
+  keys[e.code]=true;
+  if(!e.repeat)onKeyEdge(e.code);
+});
+addEventListener('keyup',e=>{keys[e.code]=false;});
+addEventListener('pointerdown',()=>{initAudio();resumeAudio();});
+function onKeyEdge(code){
+  if(Game.uiLock>0)return;
+  const confirm=(code==='Space'||code==='Enter'||code==='KeyJ');
+  const cancel=(code==='Escape'||code==='KeyX');
+  if(Game.state==='dialog'){ if(confirm)advanceDialog(); }
+  else if(Game.state==='battle'){
+    if(confirm)battleConfirm();
+    else if(cancel)battleBack();
+    else battleNavKey(code);
+  }
+  else if(Game.state==='menu'){ if(confirm||cancel)closeMenu(); }
+  else if(Game.state==='shop'){ if(cancel)closeShop(); }
+}
+
+/* ---------- 数据：等级 ---------- */
+function expNeed(lv){return 40+lv*lv*22;}
+function statsFor(lv){
+  return {
+    maxHp:20+(lv-1)*7,
+    maxMp:10+(lv-1)*4,
+    atk:8+(lv-1)*3,
+    def:5+(lv-1)*2,
+    agi:6+(lv-1)*2,
+  };
+}
+
+/* ---------- 技能 ---------- */
+const SKILLS={
+  guo:  {name:'甩锅大法',mp:4,desc:'把责任甩出去，造成1.8倍伤害',mult:1.8,kind:'attack'},
+  hua:  {name:'画饼充饥',mp:6,desc:'画个大饼，回复30%精神值',heal:0.3,kind:'heal'},
+  chong:{name:'deadline冲刺',mp:8,desc:'爆发潜能，造成2.6倍伤害',mult:2.6,kind:'attack'},
+  mail: {name:'邮件轰炸',mp:10,desc:'连环邮件，造成3.2倍伤害',mult:3.2,kind:'attack'},
+};
+const SKILL_ORDER=['guo','hua','chong','mail'];
+function skillsKnown(lv){ return SKILL_ORDER.filter((k,i)=> lv>= [1,3,5,8][i]); }
+
+/* ---------- 道具 ---------- */
+const ITEMS={
+  milktea:{name:'奶茶',desc:'回复40%精神值',hp:0.4,price:15},
+  coffee:{name:'美式咖啡',desc:'回复6点咖啡因',mp:6,price:12},
+  energy:{name:'能量饮料',desc:'精神值全满',hp:1,price:40},
+};
+
+/* ---------- 敌人（职场怪物） ---------- */
+const ENEMIES={
+  pm:  {name:'催需求的产品',hp:16,atk:7,def:2,agi:5,exp:14,gold:8,color:'#ff8a5c',spr:'pm'},
+  tong:{name:'甩锅同事',hp:13,atk:6,def:3,agi:7,exp:12,gold:7,color:'#b07cff',spr:'tong'},
+  print:{name:'打印机精',hp:22,atk:5,def:5,agi:3,exp:18,gold:10,color:'#8fa3c8',spr:'print'},
+  intern:{name:'卷王实习生',hp:20,atk:9,def:3,agi:8,exp:22,gold:12,color:'#ff5d9e',spr:'intern'},
+  boss:{name:'部门总监·王总',hp:90,atk:14,def:6,agi:6,exp:120,gold:90,color:'#ff5f56',spr:'boss',boss:true},
+};
+function makeEnemy(id,scale){
+  const d=ENEMIES[id], e=Object.assign({},d);
+  if(scale){ e.hp=Math.round(e.hp*scale); e.atk=Math.round(e.atk*(0.9+scale*0.2)); }
+  e.maxHp=e.hp; e.id=id;
+  return e;
+}
+
+/* ---------- 地图（字符表） ----------
+  # 墙  . 地板  d 桌  D 门  N NPC  ~ 装饰  B 明雷Boss
+*/
+const MAPS=[
+{name:'办公区·一层',tiles:[
+"########################",
+"#..d.....#......d.....D#",
+"#.d....d.#..d........d.#",
+"#G......d#......N......#",
+"#..d.....#..d....d.....#",
+"#......d........S......#",
+"#.d....d.#.....d....d..#",
+"#........#......d......#",
+"#..d...d.#..d.........d#",
+"#........#.............#",
+"#.....d..#..d.....d....#",
+"#.d......#...........d.#",
+"########################"
+],enc:['pm','tong','print'],rate:0.16},
+{name:'办公区·二层',tiles:[
+"########################",
+"#D.....d....#....d.....#",
+"#..d.......d#..d......d#",
+"#......d....#......d...#",
+"#.d......d..#..d.....d.#",
+"#.........d#..........d#",
+"#..d...d...#....d......#",
+"#........d.#..d......d.#",
+"#.d.......d#.........d.#",
+"#.....d....#..d...d....#",
+"#........d#B..........d#",
+"########################"
+],enc:['tong','intern','print'],rate:0.18},
+];
+
+/* ---------- 游戏状态 ---------- */
+const Game={state:'title',runStage:0,runLoop:1,uiLock:0};
+const World={map:null,mapIdx:0,cols:0,rows:0,grid:[],player:null,npcs:[],steps:0,encCd:3};
+const player={
+  x:0,y:0,dir:'down',frame:0,animT:0,moving:false,
+  lv:1,exp:0,gold:0,hp:20,mp:10,
+  atk:8,def:5,agi:6,maxHp:20,maxMp:10,
+  skills:['guo'],bag:{milktea:2,coffee:1},guard:0,
+};
+const camera={x:0,y:0};
+
+/* ---------- 地图加载 ---------- */
+function loadMap(idx,fromDoor){
+  World.mapIdx=idx; World.map=MAPS[idx];
+  const rows=World.map.tiles; World.rows=rows.length; World.cols=rows[0].length;
+  World.grid=[];World.npcs=[];
+  for(let r=0;r<rows.length;r++){
+    const row=[];
+    for(let c=0;c<rows[r].length;c++){
+      const ch=rows[r][c];
+      if(ch==='N'){ World.npcs.push({c,r,kind:'colleague',talk:['早啊，今天也要努力完成 KPI 哦。','听说王总今天心情不好，小心点。']}); row.push('.'); }
+      if(ch==='S'){ World.npcs.push({c,r,kind:'shop'}); row.push('.'); }
+      if(ch==='G'){ World.npcs.push({c,r,kind:'hr'}); row.push('.'); }
+      if(ch==='B'){ World.npcs.push({c,r,kind:'boss'}); row.push('.'); }
+      row.push((ch==='N'||ch==='S'||ch==='G'||ch==='B')?'.':ch);
+    }
+    World.grid.push(row);
+  }
+  if(!World.player){
+    World.player=player;
+    placeAt(1,1);
+  }else if(fromDoor){
+    // 进门落点：找目标图里的门
+    for(let r=0;r<World.rows;r++)for(let c=0;c<World.cols;c++)
+      if(World.grid[r][c]==='D'){ placeAt(c,r); return; }
+  }
+}
+function placeAt(c,r){ player.x=c*TILE+TILE/2; player.y=r*TILE+TILE/2; }
+function tileAtPx(x,y){
+  const c=Math.floor(x/TILE),r=Math.floor(y/TILE);
+  if(r<0||r>=World.rows||c<0||c>=World.cols)return '#';
+  return World.grid[r][c];
+}
+function isBlock(ch){ return ch==='#'||ch==='d'; }
+function canMove(x,y){
+  // 用角色碰撞框（约 12×16）四角检测
+  const hw=7,hh=9;
+  return !isBlock(tileAtPx(x-hw,y-hh))&&!isBlock(tileAtPx(x+hw,y-hh))
+      &&!isBlock(tileAtPx(x-hw,y+hh))&&!isBlock(tileAtPx(x+hw,y+hh));
+}
+
+/* ---------- 移动 ---------- */
+function moveIntent(){
+  let ix=0,iy=0;
+  if(keys.KeyA||keys.ArrowLeft)ix-=1;
+  if(keys.KeyD||keys.ArrowRight)ix+=1;
+  if(keys.KeyW||keys.ArrowUp)iy-=1;
+  if(keys.KeyS||keys.ArrowDown)iy+=1;
+  ix+=touchAxis.x;iy+=touchAxis.y;
+  ix=clamp(ix,-1,1);iy=clamp(iy,-1,1);
+  return {ix,iy};
+}
+function updateMap(dt){
+  const p=player;const {ix,iy}=moveIntent();
+  let moved=false;
+  const spd=92*dt;
+  if(ix||iy){
+    if(ix&&!iy)p.dir=ix>0?'right':'left';
+    else if(iy&&!ix)p.dir=iy>0?'down':'up';
+    else if(ix){p.dir=ix>0?'right':'left';}
+    const nx=p.x+ix*spd, ny=p.y+iy*spd;
+    if(canMove(nx,p.y)){p.x=nx;moved=true;}
+    if(canMove(p.x,ny)){p.y=ny;moved=true;}
+    p.animT+=dt;
+    p.frame=Math.floor(p.animT*6)%4;
+    if(moved)afterStep();
+  }else{ p.frame=0; }
+  p.moving=moved;
+  // 交互检测
+  checkInteract();
+  // 相机
+  camera.x=clamp(p.x-W/2,0,World.cols*TILE-W);
+  camera.y=clamp(p.y-H/2,0,World.rows*TILE-H);
+}
+let interactHeld=false;
+function checkInteract(){
+  const want=keys.Space||keys.Enter||touchConfirm;
+  // 面前格
+  const dc={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[player.dir];
+  const fc=Math.floor((player.x+dc[0]*TILE)/TILE),fr=Math.floor((player.y+dc[1]*TILE)/TILE);
+  const npc=World.npcs.find(n=>n.c===fc&&n.r===fr);
+  const ch=(World.grid[fr]&&World.grid[fr][fc])||'';
+  if(want&&!interactHeld){
+    if(npc){ interactHeld=true; talkTo(npc); }
+    else if(ch==='D'){ interactHeld=true; useDoor(); }
+  }
+  if(!want)interactHeld=false;
+}
+function afterStep(){
+  World.steps++;
+  if(World.encCd>0)World.encCd--;
+  if(World.encCd<=0&&Math.random()<World.map.rate*0.12){
+    startRandomBattle();
+  }
+}
+function useDoor(){
+  const next=World.mapIdx===0?1:0;
+  toast(next===1?'上楼，前往二层':'下楼，返回一层');
+  loadMap(next,true);
+  World.encCd=4;
+}
+
+/* ---------- 对话 ---------- */
+let dlgQueue=[],dlgCb=null;
+function talkTo(npc){
+  if(npc.kind==='boss'){
+    openBattle([makeEnemy('boss')],'王总：季度述职报告准备好了吗？');
+    return;
+  }
+  if(npc.kind==='shop'){ openShop();return; }
+  if(npc.kind==='hr'){
+    dlgQueue=['欢迎入职魔界集团！我是 HR。',
+      '想通过试用期，你得完成季度述职：去二层打败王总。',
+      '先在一层打怪攒绩效、涨工龄，绩效可去茶水间小卖部买补给。',
+      '精神值归零就会被优化，祝你好运！'];
+    dlgCb=null;showDialog('HR',dlgQueue.shift());return;
+  }
+  dlgQueue=npc.talk.slice();dlgCb=null;
+  showDialog('同事',dlgQueue.shift());
+}
+function showDialog(who,txt){
+  Game.state='dialog';
+  $('dlgWho').textContent=who;$('dlgTxt').textContent=txt;
+  $('dlg').classList.add('show');
+}
+function advanceDialog(){
+  if(dlgQueue.length){ $('dlgTxt').textContent=dlgQueue.shift(); }
+  else{ $('dlg').classList.remove('show'); Game.state='map'; if(dlgCb)dlgCb(); }
+}
+$('dlg').addEventListener('click',()=>{if(Game.state==='dialog')advanceDialog();});
+
+/* ---------- 战斗 ---------- */
+let battle=null;
+function startRandomBattle(){
+  if(!World.map)return;
+  const pool=World.map.enc;
+  const n=rint(1,Math.min(2,pool.length));
+  const list=[];
+  for(let i=0;i<n;i++)list.push(makeEnemy(pick(pool)));
+  openBattle(list,'遭遇职场怪物！');
+}
+function openBattle(enemies,intro){
+  battle={enemies,turn:'player',sel:0,menu:'main',menuIdx:0,
+    log:intro,skillIdx:0,itemIdx:0,targetIdx:0,busy:0,result:null,shake:0,
+    isBoss:enemies.some(e=>e.boss)};
+  Game.state='battle';
+  $('battleMenu').classList.add('show');$('battleInfo').classList.add('show');
+  buildBattleMenu();renderBattleInfo();
+  startBGM(battle.isBoss?'boss':'battle');
+}
+const BATTLE_MENUS={
+  main:['普通攻击','职场技能','摸鱼防御','使用道具','尝试逃跑'],
+};
+function buildBattleMenu(){
+  const g=$('bgrid');g.innerHTML='';
+  let items=[];
+  if(battle.menu==='main')items=BATTLE_MENUS.main;
+  else if(battle.menu==='skill')items=player.skills.map(k=>SKILLS[k].name+' ('+SKILLS[k].mp+')');
+  else if(battle.menu==='item')items=Object.keys(player.bag).filter(k=>player.bag[k]>0).map(k=>ITEMS[k].name+' x'+player.bag[k]);
+  else if(battle.menu==='target')items=battle.enemies.filter(e=>e.hp>0).map(e=>e.name);
+  items.forEach((label,i)=>{
+    const b=document.createElement('button');b.textContent=label;
+    if(i===battle.menuIdx)b.classList.add('sel');
+    b.onclick=()=>{battle.menuIdx=i;battleConfirm();};
+    g.appendChild(b);
+  });
+  $('subTitle').textContent=
+    battle.menu==='main'?'选择行动':
+    battle.menu==='skill'?'选择技能（ESC返回）':
+    battle.menu==='item'?'选择道具（ESC返回）':'选择目标';
+}
+function refreshSel(){
+  [...$('bgrid').children].forEach((b,i)=>b.classList.toggle('sel',i===battle.menuIdx));
+}
+function battleNavKey(code){
+  const n=$('bgrid').children.length;if(!n)return;
+  if(code==='ArrowLeft'||code==='KeyA')battle.menuIdx=(battle.menuIdx+n-1)%n;
+  if(code==='ArrowRight'||code==='KeyD')battle.menuIdx=(battle.menuIdx+1)%n;
+  if(code==='ArrowUp'||code==='KeyW')battle.menuIdx=(battle.menuIdx+n-1)%n;
+  if(code==='ArrowDown'||code==='KeyS')battle.menuIdx=(battle.menuIdx+1)%n;
+  refreshSel();SFX.select();
+}
+function battleBack(){
+  if(battle.menu==='main')return;
+  battle.menu='main';battle.menuIdx=0;buildBattleMenu();SFX.back();
+}
+function battleConfirm(){
+  if(battle.busy>0||battle.result)return;
+  const i=battle.menuIdx;
+  if(battle.menu==='main'){
+    if(i===0){battle.menu='target';battle.menuIdx=0;battle.targetIdx=0;buildBattleMenu();}
+    else if(i===1){ if(!player.skills.length){battle.log='你还没学会职场技能';renderBattleInfo();return;}
+      battle.menu='skill';battle.menuIdx=0;buildBattleMenu();}
+    else if(i===2)doGuard();
+    else if(i===3){ if(!Object.values(player.bag).some(v=>v>0)){battle.log='背包空空如也';renderBattleInfo();return;}
+      battle.menu='item';battle.menuIdx=0;buildBattleMenu();}
+    else if(i===4)doFlee();
+  }
+  else if(battle.menu==='skill'){
+    const key=player.skills[i],sk=SKILLS[key];
+    if(player.mp<sk.mp){battle.log='咖啡因不足！';renderBattleInfo();return;}
+    player.mp-=sk.mp;
+    if(sk.kind==='heal'){ const h=Math.round(player.maxHp*sk.heal);
+      player.hp=Math.min(player.maxHp,player.hp+h);SFX.heal();
+      battle.log='你使用了「'+sk.name+'」，精神值回复 '+h;
+      finishPlayerAction();
+    }else{
+      battle.menu='target';battle.pendingSkill=key;battle.menuIdx=0;buildBattleMenu();
+    }
+  }
+  else if(battle.menu==='item'){
+    const key=Object.keys(player.bag).filter(k=>player.bag[k]>0)[i];
+    player.bag[key]--;const it=ITEMS[key];
+    if(it.hp){const h=Math.round(player.maxHp*it.hp);player.hp=Math.min(player.maxHp,player.hp+h);
+      battle.log='你喝下「'+it.name+'」，精神值回复 '+h;}
+    if(it.mp){player.mp=Math.min(player.maxMp,player.mp+it.mp);
+      battle.log='你喝下「'+it.name+'」，咖啡因回复 '+it.mp;}
+    SFX.heal();renderBattleInfo();finishPlayerAction();
+  }
+  else if(battle.menu==='target'){
+    battle.targetIdx=i;
+    const target=battle.enemies.filter(e=>e.hp>0)[i];
+    if(battle.pendingSkill){const sk=SKILLS[battle.pendingSkill];
+      damageEnemy(target,player.atk*sk.mult,sk.name);battle.pendingSkill=null;
+    }else{
+      damageEnemy(target,player.atk,'普通攻击');
+    }
+    finishPlayerAction();
+  }
+}
+function damageEnemy(e,rawAtk,label){
+  const base=rawAtk-e.def*0.6;
+  let dmg=Math.max(1,Math.round(base*rand(0.85,1.15)));
+  e.hp-=dmg;e.hit=0.25;battle.shake=6;e.spark=true;SFX.attack();
+  battle.log='你用「'+label+'」对'+e.name+'造成 '+dmg+' 点伤害';
+  if(e.hp<=0){battle.log+='，'+e.name+'被你搞定了！';SFX.die();}
+}
+function doGuard(){
+  player.guard=1;battle.log='你开始摸鱼，本回合受到的伤害减半';
+  finishPlayerAction();
+}
+function doFlee(){
+  if(battle.enemies.some(e=>e.boss)||Math.random()<0.7){
+    battle.log='你成功溜了，躲过了这次加班';
+    battle.result='flee';endBattle();
+  }else{ battle.log='溜不掉，活还没干完！';finishPlayerAction(); }
+}
+function finishPlayerAction(){
+  renderBattleInfo();
+  if(battle.enemies.every(e=>e.hp<=0)){battle.result='win';endBattle();return;}
+  battle.busy=0.6;
+}
+function enemyTurn(dt){
+  // 敌人依次行动
+  for(const e of battle.enemies){
+    if(e.hp<=0)continue;
+    let dmg=Math.max(1,Math.round((e.atk-player.def*0.7)*rand(0.85,1.15)));
+    if(player.guard>0)dmg=Math.round(dmg*0.5);
+    player.hp-=dmg;player.hit=0.2;battle.shake=5;SFX.hit();
+    battle.log=e.name+'对你发起需求变更，精神值 -'+dmg;
+    if(player.hp<=0){player.hp=0;battle.result='lose';endBattle();return;}
+  }
+  player.guard=0;
+  battle.busy=0;battle.menu='main';battle.menuIdx=0;buildBattleMenu();renderBattleInfo();
+}
+function endBattle(){
+  battle.busy=1.0;
+  if(battle.result==='win'){
+    let exp=0,gold=0;
+    battle.enemies.forEach(e=>{exp+=e.exp;gold+=e.gold;});
+    battle.log='战斗胜利！获得经验 '+exp+'、绩效 '+gold;
+    player.exp+=exp;player.gold+=gold;
+    checkLevel();
+  }else if(battle.result==='lose'){SFX.lose();}
+  renderBattleInfo();
+}
+function checkLevel(){
+  while(player.exp>=expNeed(player.lv)){
+    player.exp-=expNeed(player.lv);player.lv++;
+    const st=statsFor(player.lv);
+    Object.assign(player,st);
+    player.hp=player.maxHp;player.mp=player.maxMp;
+    const ks=skillsKnown(player.lv);
+    ks.forEach(k=>{if(!player.skills.includes(k)){player.skills.push(k);
+      toast('学会新技能：'+SKILLS[k].name);}});
+    SFX.level();toast('工龄增长！Lv.'+player.lv);
+  }
+}
+function closeBattle(){
+  $('battleMenu').classList.remove('show');$('battleInfo').classList.remove('show');
+  battle=null;Game.state='map';World.encCd=3;startBGM('map');
+}
+function renderBattleInfo(){
+  const box=$('battleInfo');box.innerHTML='';
+  battle.enemies.forEach(e=>{
+    const cur=Math.max(0,e.hp),mx=e.maxHp;
+    const d=document.createElement('div');d.className='enemyCard';
+    d.innerHTML=e.name+'<div class="bar" style="width:110px"><i style="display:block;height:100%;width:'+
+      Math.round(cur/mx*100)+'%;background:linear-gradient(90deg,#ff5f56,#ff9d5c)"></i></div>';
+    box.appendChild(d);
+  });
+  const log=document.createElement('div');log.className='enemyCard';
+  log.style.marginTop='6px';log.textContent=battle.log;box.appendChild(log);
+}
+
+/* ---------- 菜单（ESC） ---------- */
+function openMenu(){
+  if(Game.state!=='map')return;
+  Game.state='menu';
+  const lines=['—— 打工状态 ——','工龄 Lv.'+player.lv,
+    '精神值 '+player.hp+'/'+player.maxHp,'咖啡因 '+player.mp+'/'+player.maxMp,
+    '攻击 '+player.atk+' 防御 '+player.def+' 敏捷 '+player.agi,
+    '绩效 '+player.gold,'已学技能：'+player.skills.map(k=>SKILLS[k].name).join('、'),
+    '','按空格/ESC关闭'];
+  showDialog('个人面板',lines.join('\n'));
+}
+function closeMenu(){ $('dlg').classList.remove('show');Game.state='map'; }
+
+/* ---------- 商店 ---------- */
+let shopOpen=false;
+function openShop(){
+  shopOpen=true;Game.state='shop';
+  $('shopMenu').classList.add('show');buildShop();
+}
+function buildShop(){
+  const g=$('shopGrid');g.innerHTML='';
+  Object.keys(ITEMS).forEach(k=>{
+    const it=ITEMS[k],b=document.createElement('button');
+    b.innerHTML=it.name+'<span class="cost">'+it.price+' 绩效</span>';
+    b.onclick=()=>buyItem(k);g.appendChild(b);
+  });
+}
+function buyItem(k){
+  const it=ITEMS[k];
+  if(player.gold<it.price){toast('绩效不足');return;}
+  player.gold-=it.price;player.bag[k]=(player.bag[k]||0)+1;
+  SFX.gold();toast('购入 '+it.name);updateHUD();
+}
+function closeShop(){
+  $('shopMenu').classList.remove('show');shopOpen=false;Game.state='map';
+}
+$('shopClose').onclick=closeShop;
+$('btnMute').onclick=()=>{initAudio();const m=toggleMute();
+  $('btnMute').classList.toggle('off',m);$('btnMute').textContent=m?'×':'♪';};
+
+/* ============================================================
+   渲染（程序化像素）
+============================================================ */
+function px(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),w,h);}
+function drawMap(){
+  const ox=Math.round(camera.x),oy=Math.round(camera.y);
+  const c0=Math.floor(ox/TILE)-1,c1=Math.floor((ox+W)/TILE)+1;
+  const r0=Math.floor(oy/TILE)-1,r1=Math.floor((oy+H)/TILE)+1;
+  for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){
+    if(r<0||c<0||r>=World.rows||c>=World.cols)continue;
+    const ch=World.grid[r][c],x=c*TILE-ox,y=r*TILE-oy;
+    if(ch==='#'){
+      px(x,y,TILE,TILE,PAL.wall);
+      px(x,y+11,TILE,1,PAL.wallLine);
+      px(x+((r%2)?0:12),y,1,12,PAL.wallLine);
+      px(x+((r%2)?12:0),y+12,1,12,PAL.wallLine);
+      px(x,y,TILE,3,PAL.wallTop);px(x,y+TILE-3,TILE,3,PAL.wallShade);
+    }else{
+      px(x,y,TILE,TILE,(r+c)%2?PAL.floor1:PAL.floor2);
+      px(x,y+TILE-2,TILE,1,PAL.floorLine);
+      if((r*7+c*13)%11===0)px(x+4,y+5,2,2,PAL.floorHi);
+      if(ch==='d'){
+        px(x+2,y+8,TILE-4,TILE-10,PAL.desk);
+        px(x+2,y+8,TILE-4,2,PAL.deskDark);
+        px(x+2,y+6,TILE-4,4,PAL.deskTop);
+        ctx.save();ctx.shadowColor=PAL.screen;ctx.shadowBlur=8;
+        px(x+6,y+9,8,6,PAL.screen);ctx.restore();
+        px(x+7,y+10,2,2,PAL.screenHi);
+      }
+      if(ch==='D'){
+        px(x+7,y+2,10,TILE-4,PAL.door);px(x+7,y+2,2,TILE-4,PAL.doorDark);
+        ctx.save();ctx.shadowColor=PAL.door;ctx.shadowBlur=6;
+        px(x+10,y+5,3,3,PAL.door);ctx.restore();
+      }
+    }
+  }
+  // NPC
+  for(const n of World.npcs){
+    const x=n.c*TILE-ox,y=n.r*TILE-oy;
+    const sk=n.kind==='boss'?'boss':(n.kind==='shop'?'shop':(n.kind==='hr'?'hr':'tong'));
+    drawSprite(x,y,0,'down',sk);
+  }
+}
+function drawPlayer(){
+  const x=player.x-camera.x,y=player.y-camera.y;
+  drawSprite(x,y,player.moving?player.frame:0,player.dir,'hero');
+}
+/* 精致像素小人：frame 0..3 步态，dir 朝向，带高光/阴影层次 */
+const KIND_DEF={
+  hero:{skin:'#f2c9a0',skinSh:'#d6a87e',body:'#3d7bd6',bodyHi:'#6aa0e8',bodySh:'#2c5aa6',hair:'#2a2f45',hairHi:'#4a5270'},
+  boss:{skin:'#e8b48f',skinSh:'#c9946e',body:'#7a2730',bodyHi:'#a04048',bodySh:'#5a1c24',hair:'#1c1c22',hairHi:'#3a3a44'},
+  tong:{skin:'#e0b894',skinSh:'#c49c78',body:'#6a5acd',bodyHi:'#9085e0',bodySh:'#4e42a0',hair:'#4a3a8a',hairHi:'#6e5cb0'},
+  hr:{skin:'#f2c9a0',skinSh:'#d6a87e',body:'#d6488a',bodyHi:'#e878ac',bodySh:'#a83568',hair:'#3a2540',hairHi:'#5e4068'},
+  shop:{skin:'#f2c9a0',skinSh:'#d6a87e',body:'#2fae8b',bodyHi:'#5ccbab',bodySh:'#22856a',hair:'#23403a',hairHi:'#3e665c'},
+};
+function drawSprite(cx,cy,frame,dir,kind){
+  const kd=KIND_DEF[kind]||KIND_DEF.tong;
+  const x=Math.round(cx),y=Math.round(cy);
+  const walk=(frame===1||frame===3);
+  const ph=frame===1?1:frame===3?-1:0;
+  const bob=walk?1:0;
+  ctx.fillStyle='rgba(0,0,0,.38)';ctx.beginPath();ctx.ellipse(x,y+11,8,3,0,0,7);ctx.fill();
+  const legL='#222a42',legR='#2c3558',shoe='#15181f';
+  px(x-4+ph,y+4,3,6,legL);px(x+1-ph,y+4,3,6,legR);
+  px(x-4+ph,y+9,3,2,shoe);px(x+1-ph,y+9,3,2,shoe);
+  px(x-5,y-4-bob,10,9,kd.body);
+  px(x-5,y-4-bob,2,9,kd.bodyHi);
+  px(x+3,y-4-bob,2,9,kd.bodySh);
+  px(x-2,y-4-bob,4,2,kd.bodyHi);
+  px(x-6,y-3-bob+ph,2,6,kd.skin);px(x+4,y-3-bob-ph,2,6,kd.skin);
+  px(x-4,y-12-bob,8,8,kd.skin);
+  px(x-4,y-7-bob,8,2,kd.skinSh);
+  px(x-4,y-12-bob,8,3,kd.hair);
+  px(x-4,y-12-bob,8,1,kd.hairHi);
+  if(dir==='up'){px(x-4,y-9-bob,8,5,kd.hair);}
+  if(dir==='left'){px(x-4,y-12-bob,3,8,kd.hair);px(x-4,y-12-bob,1,8,kd.hairHi);}
+  if(dir==='right'){px(x+1,y-12-bob,3,8,kd.hair);px(x+3,y-12-bob,1,8,kd.hairHi);}
+  if(dir!=='up'){
+    if(dir==='left')px(x-3,y-7-bob,1,2,'#1a1d28');
+    else if(dir==='right')px(x+2,y-7-bob,1,2,'#1a1d28');
+    else{px(x-2,y-7-bob,1,2,'#1a1d28');px(x+1,y-7-bob,1,2,'#1a1d28');}
+  }
+  if(kind==='boss'){
+    px(x-1,y-4-bob,2,5,PAL.gold);px(x-1,y-4-bob,2,1,'#fff3c4');
+  }
+}
+/* 战斗场景：会议室背景 + 敌我站位 + 粒子 */
+function enemyScreenPos(i){return {x:300+i*180,y:248};}
+function drawBattle(){
+  // 背景渐变
+  for(let i=0;i<H;i+=4){
+    const t=i/H;px(0,i,W,4,'rgb('+Math.round(13+t*8)+','+Math.round(16+t*10)+','+Math.round(27+t*14)+')');
+  }
+  // 后墙窗户（夜景城市）
+  for(let w=0;w<3;w++){
+    const wx=120+w*260,wy=70,ww=180,wh=120;
+    px(wx-4,wy-4,ww+8,wh+8,'#1a2236');
+    px(wx,wy,ww,wh,'#0e1424');
+    for(let k=0;k<26;k++){
+      const lx=wx+6+(k%6)*28,ly=wy+10+Math.floor(k/6)*24;
+      if(Math.random()<0.55)px(lx,ly,8,10,Math.random()<0.3?'#ffce54':'#4be3d4');
+    }
+    px(wx,wy,ww,3,'#2a3a5c');
+  }
+  // 顶部灯光光晕
+  ctx.save();ctx.globalAlpha=.18;ctx.fillStyle='#6aa6ff';
+  for(let lx=160;lx<W;lx+=240){ctx.beginPath();ctx.ellipse(lx,40,90,30,0,0,7);ctx.fill();}
+  ctx.restore();
+  // 地板透视线
+  ctx.strokeStyle='#2a3350';ctx.lineWidth=2;
+  for(let i=0;i<8;i++){const x=80+i*120;
+    ctx.beginPath();ctx.moveTo(x,H);ctx.lineTo(480,300);ctx.stroke();}
+  ctx.beginPath();ctx.moveTo(0,420);ctx.lineTo(W,420);ctx.stroke();
+  const sh=battle?battle.shake:0;const shx=sh?rand(-sh,sh):0,shy=sh?rand(-sh,sh):0;
+  if(battle){
+    battle.enemies.forEach((e,i)=>{
+      const pos=enemyScreenPos(i);
+      if(e.spark){burst(pos.x,pos.y-4,e.boss?'#ffce54':'#fff',e.hp<=0?16:7);e.spark=false;}
+      if(e.hit>0){ctx.globalAlpha=0.6;}
+      drawBattleEnemy(pos.x+shx,pos.y+shy,e);
+      ctx.globalAlpha=1;
+    });
+    const ph=player.hit?0.5:1;ctx.globalAlpha=ph;
+    drawSprite(150,380,0,'right','hero');ctx.globalAlpha=1;
+  }
+  drawParticles(0,0);
+}
+const ENEMY_VIS={
+  pm:{body:'#ff8a5c',hi:'#ffb596',sh:'#d66a42',hair:'#7a3f28'},
+  tong:{body:'#b07cff',hi:'#cdabff',sh:'#8a5cd6',hair:'#4a3a8a'},
+  print:{body:'#8fa3c8',hi:'#b6c5e2',sh:'#6a7da0',hair:'#4a5a78'},
+  intern:{body:'#ff5d9e',hi:'#ff93c0',sh:'#d64278',hair:'#5a2540'},
+  boss:{body:'#c0392b',hi:'#e06050',sh:'#8a2820',hair:'#1c1c22'},
+};
+function drawBattleEnemy(cx,cy,e){
+  const v=ENEMY_VIS[e.id]||ENEMY_VIS.pm;
+  const x=Math.round(cx),y=Math.round(cy);
+  const float=Math.round(Math.sin(performance.now()/280+x)*1);
+  ctx.fillStyle='rgba(0,0,0,.38)';ctx.beginPath();ctx.ellipse(x,y+11,9,3.2,0,0,7);ctx.fill();
+  px(x-4,y+4,3,6,'#2a2238');px(x+1,y+4,3,6,'#2a2238');
+  px(x-4,y+9,3,2,'#18141f');px(x+1,y+9,3,2,'#18141f');
+  const bw=e.boss?12:10,bx=e.boss?x-6:x-5;
+  px(bx,y-4-float,bw,9,v.body);px(bx,y-4-float,2,9,v.hi);px(bx+bw-2,y-4-float,2,9,v.sh);
+  px(x-7,y-3-float,2,6,v.body);px(x+5,y-3-float,2,6,v.body);
+  px(x-5,y-14-float,10,9,v.body);px(x-5,y-14-float,10,2,v.hi);px(x-5,y-7-float,10,2,v.sh);
+  px(x-5,y-14-float,10,3,v.hair);
+  px(x-3,y-10-float,2,2,'#fff');px(x+1,y-10-float,2,2,'#fff');
+  px(x-2,y-10-float,1,2,'#1a1020');px(x+2,y-10-float,1,2,'#1a1020');
+  px(x-4,y-12-float,3,1,v.sh);px(x+1,y-12-float,3,1,v.sh);
+  if(e.id==='pm')px(x+7,y-2-float,4,5,'#f0f2f8');
+  if(e.id==='intern'){px(x-4,y-10-float,3,1,'#222');px(x+1,y-10-float,3,1,'#222');}
+  if(e.id==='print'){px(x-9,y-16-float,4,6,'#e8f0ff');px(x+5,y-16-float,4,6,'#e8f0ff');}
+  if(e.id==='boss'){px(x-1,y-4-float,2,6,PAL.gold);px(x-1,y-4-float,2,1,'#fff3c4');}
+}
+/* 粒子系统 */
+const particles=[];
+function addParticle(x,y,o){particles.push(Object.assign({x,y,vx:0,vy:0,life:.5,max:.5,size:2,color:'#fff',g:0},o));}
+function burst(x,y,color,n){
+  for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=rand(30,120);
+    addParticle(x,y,{vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-20,life:rand(.25,.55),
+      size:rand(1,3),color,g:90});}
+}
+function updateParticles(dt){
+  for(let i=particles.length-1;i>=0;i--){const p=particles[i];
+    p.life-=dt;p.vy+=p.g*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;
+    if(p.life<=0)particles.splice(i,1);}
+}
+function drawParticles(ox,oy){
+  for(const p of particles){ctx.globalAlpha=Math.max(0,p.life/p.max);
+    px(p.x-ox,p.y-oy,p.size,p.size,p.color);}
+  ctx.globalAlpha=1;
+}
+let vign=null;
+function drawVignette(){
+  if(!vign){vign=ctx.createRadialGradient(W/2,H/2,H*0.42,W/2,H/2,H*0.86);
+    vign.addColorStop(0,'rgba(0,0,0,0)');
+    vign.addColorStop(1,'rgba(0,0,0,.42)');}
+  ctx.fillStyle=vign;ctx.fillRect(0,0,W,H);
+}
+function render(){
+  if(Game.state==='battle'){ drawBattle(); }
+  else if(World.map){
+    drawMap();drawPlayer();
+  }
+  drawVignette();
+}
+
+/* ---------- HUD ---------- */
+function updateHUD(){
+  $('hpTxt').textContent=player.hp+'/'+player.maxHp;
+  $('mpTxt').textContent=player.mp+'/'+player.maxMp;
+  $('hpBar').style.width=(player.hp/player.maxHp*100)+'%';
+  $('mpBar').style.width=(player.mp/player.maxMp*100)+'%';
+  $('goldTxt').textContent=player.gold;$('lvTxt').textContent=player.lv;
+  $('locTxt').textContent=World.map?World.map.name:'';
+}
+
+/* ---------- Toast ---------- */
+let toastT=null;
+function toast(msg){
+  const t=$('toast');t.textContent=msg;t.classList.remove('show');
+  void t.offsetWidth;t.classList.add('show');
+}
+
+/* ---------- 存档 ---------- */
+const SAVE='work_quest_save_v1';
+function saveGame(){
+  const d={p:Object.assign({},player,{skills:player.skills,bag:player.bag}),map:World.mapIdx,steps:World.steps};
+  try{localStorage.setItem(SAVE,JSON.stringify(d));return true;}catch(e){return false;}
+}
+function loadGame(){
+  try{
+    const d=JSON.parse(localStorage.getItem(SAVE));if(!d)return false;
+    Object.assign(player,d.p);player.skills=d.p.skills;player.bag=d.p.bag;
+    startRun(d.map);return true;
+  }catch(e){return false;}
+}
+
+/* ---------- 流程 ---------- */
+function startRun(mapIdx){
+  loadMap(mapIdx||0,false);
+  Game.state='map';
+  $('ovTitle').classList.remove('show');$('ovOver').classList.remove('show');
+  $('hud').classList.add('show');
+  if(isTouchDevice())$('touch').classList.add('show');
+  World.encCd=4;startBGM('map');
+}
+function gameOver(){
+  stopBGM();SFX.lose();
+  Game.state='over';
+  $('overStats').textContent='工龄 Lv.'+player.lv+' · 累计步数 '+World.steps+' · 绩效 '+player.gold;
+  $('ovOver').classList.add('show');
+}
+function showWin(){
+  stopBGM();SFX.win();
+  Game.state='over';
+  $('winStats').textContent='工龄 Lv.'+player.lv+' · 步数 '+World.steps+' · 绩效 '+player.gold;
+  $('ovWin').classList.add('show');
+}
+function isTouchDevice(){ return ('ontouchstart' in window)||navigator.maxTouchPoints>0; }
+
+/* ---------- 按钮绑定 ---------- */
+$('btnStart').onclick=()=>{startRun(0);};
+$('btnContinue').onclick=()=>{ if(!loadGame())toast('没有找到存档'); };
+$('btnHelp').onclick=()=>{$('ovTitle').classList.remove('show');$('ovHelp').classList.add('show');};
+$('btnHelpBack').onclick=()=>{$('ovHelp').classList.remove('show');$('ovTitle').classList.add('show');};
+$('btnRetry').onclick=()=>{ resetPlayer();startRun(0); };
+$('btnOverTitle').onclick=()=>{$('ovOver').classList.remove('show');$('ovTitle').classList.add('show');$('hud').classList.remove('show');};
+$('btnWinAgain').onclick=()=>{$('ovWin').classList.remove('show');resetPlayer();startRun(0);};
+$('btnWinTitle').onclick=()=>{$('ovWin').classList.remove('show');$('ovTitle').classList.add('show');$('hud').classList.remove('show');};
+function resetPlayer(){
+  Object.assign(player,{x:0,y:0,dir:'down',frame:0,lv:1,exp:0,gold:0,hp:20,mp:10,
+    atk:8,def:5,agi:6,maxHp:20,maxMp:10,skills:['guo'],bag:{milktea:2,coffee:1},guard:0});
+  World.player=null;
+}
+
+/* ---------- 触屏按键绑定 ---------- */
+function bindTouch(id,down,up){
+  const el=$(id);
+  const dn=e=>{e.preventDefault();down();};
+  const up2=e=>{e.preventDefault();if(up)up();};
+  el.addEventListener('touchstart',dn);el.addEventListener('touchend',up2);
+  el.addEventListener('mousedown',dn);el.addEventListener('mouseup',up2);el.addEventListener('mouseleave',up2);
+}
+bindTouch('tUp',()=>touchAxis.y=-1,()=>touchAxis.y=0);
+bindTouch('tDown',()=>touchAxis.y=1,()=>touchAxis.y=0);
+bindTouch('tLeft',()=>touchAxis.x=-1,()=>touchAxis.x=0);
+bindTouch('tRight',()=>touchAxis.x=1,()=>touchAxis.x=0);
+bindTouch('tAct',()=>{touchConfirm=true;},()=>touchConfirm=false);
+
+/* ---------- 主循环（rAF + 自动 setInterval 兜底） ---------- */
+let lastNow=performance.now(),facc=0;const FSTEP=1/60;
+function doFrame(now){
+  let dt=(now-lastNow)/1000;lastNow=now;if(dt>0.25)dt=0.25;
+  if(Game.state==='map'){
+    updateMap(dt);
+  }else if(Game.state==='battle'&&battle){
+    if(battle.busy>0){
+      battle.busy-=dt;
+      if(battle.shake>0)battle.shake=Math.max(0,battle.shake-dt*30);
+      battle.enemies.forEach(e=>{if(e.hit>0)e.hit-=dt;});
+      if(player.hit>0)player.hit-=dt;
+      if(battle.result&&battle.busy<=0){
+        if(battle.result==='flee'||battle.result==='win'){
+          const isBoss=battle.isBoss;
+          closeBattle();
+          if(isBoss)showWin();
+        }
+        else if(battle.result==='lose'){closeBattle();gameOver();}
+      }else if(!battle.result&&battle.busy<=0){
+        enemyTurn(dt);
+      }
+    }
+  }
+  updateParticles(dt);
+  render();
+  if(World.player)updateHUD();
+}
+/* 自适应等比缩放（保持 16:9，overlay 跟随 stage） */
+function fit(){
+  const vw=innerWidth,vh=innerHeight,sc=Math.min(vw/W,vh/H);
+  const dw=Math.round(W*sc),dh=Math.round(H*sc);
+  cv.style.width=dw+'px';cv.style.height=dh+'px';
+  const st=$('stage');st.style.width=dw+'px';st.style.height=dh+'px';
+}
+addEventListener('resize',fit);fit();
+let rafCount=0,fallbackOn=false;
+function rafLoop(now){
+  rafCount++;
+  if(!fallbackOn)doFrame(now);
+  requestAnimationFrame(rafLoop);
+}
+requestAnimationFrame(rafLoop);
+/* 每秒统计实际帧率：低于 30fps（含完全不触发/稀疏触发）即切换固定步长兜底 */
+setInterval(()=>{
+  if(!fallbackOn&&rafCount<30){
+    fallbackOn=true;
+    setInterval(()=>{doFrame(performance.now());},1000/60);
+  }
+  rafCount=0;
+},1000);
+
+/* ---------- 测试钩子（隔离世界经此交互） ---------- */
+const dbgEl=document.createElement('div');dbgEl.id='__dbg2';
+dbgEl.style.display='none';document.body.appendChild(dbgEl);
+document.addEventListener('__es_test',e=>{
+  const cmd=e.detail;
+  if(cmd==='state'){
+    dbgEl.textContent=JSON.stringify({state:Game.state,map:World.mapIdx,
+      px:Math.round(player.x),py:Math.round(player.y),hp:player.hp,mp:player.mp,
+      lv:player.lv,gold:player.gold,enemies:battle?battle.enemies.length:0});
+  }else if(cmd==='save'){dbgEl.textContent=saveGame()?'saved':'fail';}
+  else if(cmd==='load'){dbgEl.textContent=loadGame()?'loaded':'no save';}
+  else if(cmd==='forcebattle'){startRandomBattle();dbgEl.textContent='battle';}
+  else if(cmd==='winbattle'){
+    if(battle){battle.enemies.forEach(e=>e.hp=0);
+      battle.result='win';battle.busy=0.1;endBattle();dbgEl.textContent='forced win';}
+  }else if(cmd.startsWith('sim:')){
+    const parts=cmd.split(':'),code=parts[1],sec=parseFloat(parts[2])||1;
+    keys[code]=true;setTimeout(()=>{keys[code]=false;},sec*1000);
+    dbgEl.textContent='sim '+code+' '+sec;
+  }else if(cmd==='door'){
+    if(Game.state==='map'){useDoor();dbgEl.textContent='door used';}
+    else dbgEl.textContent='not on map';
+  }else if(cmd==='kill'){
+    player.hp=0;gameOver();dbgEl.textContent='killed';
+  }else if(cmd==='reset'){
+    resetPlayer();startRun(0);dbgEl.textContent='reset';
+  }else if(cmd==='audioinit'){
+    initAudio();resumeAudio();dbgEl.textContent='init '+(AC?AC.state:'fail');
+  }else if(cmd==='audiostate'){
+    dbgEl.textContent=JSON.stringify({hasAC:!!AC,state:AC?AC.state:null,
+      bgm:bgmMode,muted:muted});
+  }else if(cmd==='battledbg'){
+    dbgEl.textContent=JSON.stringify({busy:battle.busy,result:battle.result,
+      gstate:Game.state,ehp:battle.enemies.map(e=>e.hp)});
+  }else if(cmd.startsWith('place:')){
+    const pp=cmd.split(':'),c=+pp[1],r=+pp[2];placeAt(c,r);
+    if(pp[3])player.dir=pp[3];
+    dbgEl.textContent='placed';
+  }else if(cmd==='interact'){
+    const dc={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[player.dir];
+    const fc=Math.floor((player.x+dc[0]*TILE)/TILE),fr=Math.floor((player.y+dc[1]*TILE)/TILE);
+    const npc=World.npcs.find(n=>n.c===fc&&n.r===fr);
+    const ch=(World.grid[fr]&&World.grid[fr][fc])||'';
+    if(npc){talkTo(npc);dbgEl.textContent='talk '+npc.kind;}
+    else if(ch==='D'){useDoor();dbgEl.textContent='door';}
+    else dbgEl.textContent='nothing ahead';
+  }else{dbgEl.textContent='unknown:'+cmd;}
+});
+</script>
+</body>
+</html>
