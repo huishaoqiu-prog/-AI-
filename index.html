@@ -1455,6 +1455,7 @@ function checkContact(){
 // 玩家受伤
 function hurtPlayer(dmg){
   const p=World.player;
+  if(demoMode)return;
   if(p.invuln>0||p.barrier>0)return;
   if(p.shieldOn){
     p.shieldOn=false;p.invuln=0.6;
@@ -2149,6 +2150,7 @@ function doFrame(now){
   writeDbg();
 }
 let manualTimer=null;
+let demoTimer=null,demoT=0,demoMode=false;
 requestAnimationToken=requestAnimationFrame(frame);
 
 // ================= 按钮事件 =================
@@ -2217,6 +2219,31 @@ document.addEventListener('__es_test',e=>{
       last=performance.now();acc=0;
       manualTimer=setInterval(()=>{try{doFrame(performance.now());}catch(err){}},1000/60);
       dbg2.textContent='manual started';
+    }
+  }
+  if(cmd==='demo'){
+    if(demoTimer){
+      clearInterval(demoTimer);demoTimer=null;demoMode=false;
+      if(manualTimer){clearInterval(manualTimer);manualTimer=null;}
+      keys.KeyD=false;keys.KeyJ=false;keys.KeyS=false;keys.Space=false;
+      dbg2.textContent='demo stopped';
+    }else{
+      if(manualTimer){clearInterval(manualTimer);manualTimer=null;}
+      demoMode=true;demoT=0;last=performance.now();acc=0;
+      demoTimer=setInterval(()=>{
+        try{
+          demoT+=STEP;
+          const pl=World.player;
+          if(pl){
+            const ph=demoT%6;
+            keys.KeyD=true;keys.KeyJ=true;keys.KeyS=false;keys.Space=false;
+            if(ph>=2&&ph<2.35)keys.Space=true;
+            if(ph>=4&&ph<5)keys.KeyS=true;
+          }
+          doFrame(performance.now());
+        }catch(err){}
+      },1000/60);
+      dbg2.textContent='demo started';
     }
   }
   else  if(cmd==='togglepause'){
