@@ -2133,6 +2133,9 @@ function step(dt){
 }
 function frame(now){
   requestAnimationFrame(frame);
+  doFrame(now);
+}
+function doFrame(now){
   let dt=(now-last)/1000;last=now;if(dt>0.25)dt=0.25;
   fpsAcc+=dt;fpsCount++;
   if(fpsAcc>=0.5){realFps=Math.round(fpsCount/fpsAcc);fpsAcc=0;fpsCount=0;}
@@ -2145,7 +2148,8 @@ function frame(now){
   if(World.player)updateHUD();
   writeDbg();
 }
-requestAnimationFrame(frame);
+let manualTimer=null;
+requestAnimationToken=requestAnimationFrame(frame);
 
 // ================= 按钮事件 =================
 function go(id,fn){document.getElementById(id).onclick=function(){AudioSys.sfx.ui();return fn.apply(this,arguments);};}
@@ -2207,7 +2211,15 @@ ovTitleEl.style.backgroundPosition='center';
 document.addEventListener('__es_test',e=>{
   const cmd=e.detail;
   const dbg2=document.getElementById('__dbg2');
-  if(cmd==='togglepause'){
+  if(cmd==='manualdrive'){
+    if(manualTimer){clearInterval(manualTimer);manualTimer=null;dbg2.textContent='manual stopped';}
+    else{
+      last=performance.now();acc=0;
+      manualTimer=setInterval(()=>{try{doFrame(performance.now());}catch(err){}},1000/60);
+      dbg2.textContent='manual started';
+    }
+  }
+  else  if(cmd==='togglepause'){
     Game.togglePause();
     const o=document.getElementById('ovPause');
     dbg2.textContent=JSON.stringify({state:Game.state,ovPause:o.offsetParent!==null});
