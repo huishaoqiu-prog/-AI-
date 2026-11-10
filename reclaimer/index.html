@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#09131c">
+  <meta name="description" content="弹药回收员：选择米拉或诺克，使用磁能手枪、磁芯霰弹枪与喷火器，组合26种改装闯过失控工厂。支持手机横屏与电脑。">
+  <title>弹药回收员 · RECLAIMER</title>
+  <style>
+    *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080f17;color:#e5efec;font-family:system-ui,"Microsoft YaHei",sans-serif}body{overscroll-behavior:none}#canvas{display:block;position:absolute;inset:0;width:100%;height:100%;outline:none;touch-action:none}#gate{position:fixed;inset:0;z-index:5;display:grid;place-items:center;background:radial-gradient(ellipse at 80% 25%,#173d43 0,transparent 48%),linear-gradient(125deg,#0a141e,#101e29 70%,#19252a);padding:24px;overflow:auto}#gate[hidden]{display:none}.grid{position:absolute;inset:0;background-image:linear-gradient(#789d9b0b 1px,transparent 1px),linear-gradient(90deg,#789d9b0b 1px,transparent 1px);background-size:64px 64px;pointer-events:none}.card{position:relative;width:min(960px,100%);padding:44px 48px;border:1px solid #476269;border-left:5px solid #62f5e2;background:#0d1b26dd;box-shadow:0 30px 90px #0006}.eyebrow{font-size:12px;letter-spacing:.22em;color:#62f5e2;font-weight:700}h1{font-size:clamp(36px,6vw,66px);letter-spacing:-.04em;margin:22px 0 5px;line-height:1.15}.sub{letter-spacing:.3em;font-size:13px;color:#ffab54}.intro{margin:25px 0 22px;color:#a5bbb9;font-size:17px;line-height:1.9;max-width:650px}.tags{display:flex;gap:9px;flex-wrap:wrap}.tag{border:1px solid #35515b;color:#b2cbc8;padding:8px 12px;font-size:12px;background:#142b34}.actions{display:flex;align-items:center;gap:26px;margin-top:30px;flex-wrap:wrap}button{font:inherit;cursor:pointer;border:1px solid #62f5e2;background:#62f5e2;color:#0a232d;font-weight:750;padding:16px 30px;min-height:50px}button:hover{background:#acfdef}button:disabled{opacity:.65;cursor:wait}label{display:flex;gap:10px;align-items:center;color:#b4c9c6;font-size:14px}input{accent-color:#62f5e2;width:18px;height:18px}#message{font-size:13px;line-height:1.8;color:#90aaa9;margin:20px 0 0;white-space:pre-wrap}progress{display:block;width:100%;height:5px;margin-top:18px;accent-color:#62f5e2}progress[hidden]{display:none}.foot{margin-top:24px;padding-top:18px;border-top:1px solid #2b434b;color:#68888b;font-size:11px;line-height:1.8}.foot a{color:#8db1ad}#fullscreen{position:fixed;right:max(12px,env(safe-area-inset-right));top:max(8px,env(safe-area-inset-top));z-index:2;font-size:12px;min-height:32px;padding:6px 12px;background:#112734bb;color:#a9c7c5;border-color:#46656c}#rotate{display:none;position:fixed;bottom:8px;left:50%;transform:translateX(-50%);z-index:3;white-space:nowrap;padding:8px 16px;border:1px solid #766342;background:#17212be8;color:#ffca80;font-size:12px}@media(max-width:650px){.card{padding:28px 22px}.intro{font-size:14px}.actions{gap:18px}.eyebrow{font-size:10px}.tag{font-size:11px;padding:6px 9px}.foot{font-size:10px}}@media(orientation:portrait){#rotate{display:block}}@media(max-height:500px) and (orientation:landscape){.card{padding:20px 30px}h1{font-size:38px;margin-top:12px}.intro{font-size:14px;margin:12px 0}.actions{margin-top:14px}.foot{margin-top:12px;padding-top:10px}#message{margin-top:10px}.tags{gap:6px}.tag{padding:5px 9px}}
+  </style>
+</head>
+<body data-state="waiting">
+  <canvas id="canvas" tabindex="0" aria-label="弹药回收员游戏画面">你的浏览器需要支持 WebGL 2，请使用较新的浏览器。</canvas>
+  <button id="fullscreen" aria-label="切换全屏">全屏</button>
+  <aside id="rotate">建议横屏游玩，操作区域会更宽敞。</aside>
+  <main id="gate">
+    <div class="grid"></div>
+    <section class="card">
+      <div class="eyebrow">YOUXI / FIELD OPERATIONS / UPDATE 03</div>
+      <h1>弹药回收员</h1>
+      <div class="sub">RECLAIMER</div>
+      <p class="intro">失控工厂，有限预算。<br>把射出的子弹变成第二次攻击，用每一次改装决定你的打法。</p>
+      <div class="tags"><span class="tag">2 名员工</span><span class="tag">3 种武器</span><span class="tag">26 种改装</span><span class="tag">精修角色 / 分层音效</span></div>
+      <div class="actions"><button id="play">进入工厂 →</button><label><input type="checkbox" id="touch">触屏双摇杆</label></div>
+      <progress id="progress" hidden></progress>
+      <p id="message" role="status" aria-live="polite">电脑：WASD 移动，左键射击，右键召回或排热，空格冲刺。<br>手机：横屏游玩，左侧移动，右侧瞄准射击。</p>
+      <div class="foot">v0.3.1 · 已加入原创背景音乐，建议在网络稳定时进入。<br>Godot Engine · <a href="https://godotengine.org/license/" target="_blank" rel="noopener">引擎许可</a> · <a href="font-license.txt" target="_blank">字体许可</a></div>
+    </section>
+  </main>
+  <script>
+    const engineManifest = {"gzip":"engine-fc74679e3b97.gz.bin","chunks":["engine-fc74679e3b97-0.bin","engine-fc74679e3b97-1.bin","engine-fc74679e3b97-2.bin","engine-fc74679e3b97-3.bin","engine-fc74679e3b97-4.bin"],"size":39514754};
+    const nativeFetch = window.fetch.bind(window);
+    let wasmPromise;
+    const progress = document.getElementById('progress');
+    const message = document.getElementById('message');
+    async function getWasm(){
+      if('DecompressionStream' in window){
+        const response = await nativeFetch(engineManifest.gzip);
+        if(!response.ok) throw new Error('引擎资源加载失败，请刷新后重试。');
+        let received=0;
+        const total=Number(response.headers.get('content-length'));
+        const tracking = new TransformStream({transform(chunk,controller){
+          received+=chunk.byteLength;
+          message.textContent=`正在加载工厂资源 · ${(received/1048576).toFixed(1)} MB${total?' / '+(total/1048576).toFixed(1)+' MB':''}`;
+          if(total){progress.max=total;progress.value=received;}
+          controller.enqueue(chunk);
+        }});
+        return new Uint8Array(await new Response(response.body.pipeThrough(tracking).pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
+      }
+      const chunks=await Promise.all(engineManifest.chunks.map(async name=>{
+        const r=await nativeFetch(name); if(!r.ok)throw new Error('引擎资源加载失败');return new Uint8Array(await r.arrayBuffer());
+      }));
+      const result=new Uint8Array(engineManifest.size);let at=0;
+      for(const chunk of chunks){result.set(chunk,at);at+=chunk.length;}return result;
+    }
+    window.fetch=async function(input,init){
+      const url=new URL(typeof input==='string'?input:(input.url||String(input)),location.href);
+      if(url.origin===location.origin&&url.pathname.endsWith('/index.wasm')){
+        wasmPromise??=getWasm();
+        const bytes=await wasmPromise;
+        if(bytes.length!==engineManifest.size)throw new Error('引擎资源不完整，请刷新后重试。');
+        const response=new Response(bytes,{headers:{'Content-Type':'application/wasm','Content-Length':String(bytes.length)}});
+        setTimeout(()=>{wasmPromise=null},0);
+        return response;
+      }
+      if(url.origin===location.origin&&url.pathname.endsWith('/index.pck'))return nativeFetch(input,{...init,cache:'no-cache'});
+      return nativeFetch(input,init);
+    };
+    document.getElementById('canvas').addEventListener('contextmenu',e=>e.preventDefault());
+  </script>
+  <script src="index.js?v=0.3.1"></script>
+  <script>
+    const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":730248,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+    const touch=document.getElementById('touch');touch.checked=navigator.maxTouchPoints>0;
+    const params=new URLSearchParams(location.search);
+    if(params.get('touch')==='1')touch.checked=true;
+    const gate=document.getElementById('gate'),play=document.getElementById('play');
+    const diagnostics={errors:[],logs:[],state:'waiting'};window.reclaimerDiagnostics=diagnostics;
+    function fail(error){
+      diagnostics.state='failed';diagnostics.errors.push(String(error));document.body.dataset.state='failed';
+      gate.hidden=false;message.textContent='启动失败：'+String(error)+'\n请刷新后重试，或使用较新的 Chrome / Safari / Firefox。';
+      play.textContent='刷新后重试';play.disabled=false;play.onclick=()=>location.reload();progress.hidden=true;
+    }
+    window.addEventListener('error',event=>diagnostics.errors.push(event.message));
+    window.addEventListener('unhandledrejection',event=>diagnostics.errors.push(String(event.reason)));
+    async function toggleFullscreen(){
+      try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{}
+    }
+    document.getElementById('fullscreen').onclick=toggleFullscreen;
+    let engine;
+    async function start(){
+      play.disabled=true;play.textContent='正在进入…';progress.hidden=false;message.textContent='正在准备工厂资源…';
+      diagnostics.state='loading';document.body.dataset.state='loading';
+      const missing=Engine.getMissingFeatures({threads:false});
+      if(missing.length){fail('浏览器缺少 '+missing.join('、'));return;}
+      const args=[];
+      if(touch.checked)args.push('--touch');
+      if(params.get('autotest')==='1')args.push('--smoke-test','--weapon='+Math.max(0,Math.min(2,Number(params.get('weapon'))||0)));
+      engine=new Engine({...GODOT_CONFIG,args:args.length?['--',...args]:[],
+        onPrint:(...values)=>{const s=values.join(' ');diagnostics.logs.push(s);if(diagnostics.logs.length>100)diagnostics.logs.shift();console.log(s)},
+        onPrintError:(...values)=>{const s=values.join(' ');diagnostics.errors.push(s);console.error(s)},
+        onExit:code=>{document.body.dataset.state=code===0?'finished':'failed';diagnostics.state=document.body.dataset.state;}
+      });
+      try{
+        await engine.startGame({canvas:document.getElementById('canvas')});
+        gate.hidden=true;document.body.dataset.state='ready';diagnostics.state='ready';
+        document.getElementById('canvas').focus();
+      }catch(error){fail(error)}
+    }
+    play.onclick=start;
+    if(params.get('autotest')==='1')start();
+  </script>
+</body>
+</html>
