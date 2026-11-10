@@ -11,6 +11,7 @@
   </style>
 </head>
 <body data-state="waiting">
+  <output id="performance-report" hidden></output>
   <canvas id="canvas" tabindex="0" aria-label="弹药回收员游戏画面">你的浏览器需要支持 WebGL 2，请使用较新的浏览器。</canvas>
   <button id="fullscreen" aria-label="切换全屏">全屏</button>
   <aside id="rotate">建议横屏游玩，操作区域会更宽敞。</aside>
@@ -22,84 +23,90 @@
       <div class="sub">RECLAIMER</div>
       <p class="intro">失控工厂，有限预算。<br>把射出的子弹变成第二次攻击，用每一次改装决定你的打法。</p>
       <div class="tags"><span class="tag">2 名员工</span><span class="tag">3 种武器</span><span class="tag">26 种改装</span><span class="tag">精修角色 / 分层音效</span></div>
-      <div class="actions"><button id="play">进入工厂 →</button><label><input type="checkbox" id="touch">触屏双摇杆</label></div>
+      <div class="actions"><button id="play">进入工厂 →</button><label><input type="checkbox" id="touch">触屏双摇杆</label><label><input type="checkbox" id="silent">无声模式</label></div>
       <progress id="progress" hidden></progress>
       <p id="message" role="status" aria-live="polite">电脑：WASD 移动，左键射击，右键召回或排热，空格冲刺。<br>手机：横屏游玩，左侧移动，右侧瞄准射击。</p>
-      <div class="foot">v0.3.1 · 已加入原创背景音乐，建议在网络稳定时进入。<br>Godot Engine · <a href="https://godotengine.org/license/" target="_blank" rel="noopener">引擎许可</a> · <a href="font-license.txt" target="_blank">字体许可</a></div>
+      <div class="foot">v0.3.2 · iPhone 兼容更新。手机仍异常时可勾选无声模式重试。<br>Godot Engine · <a href="https://godotengine.org/license/" target="_blank" rel="noopener">引擎许可</a> · <a href="font-license.txt" target="_blank">字体许可</a></div>
     </section>
   </main>
+  <script src="wasm-loader.js?v=0.3.2"></script>
   <script>
     const engineManifest = {"gzip":"engine-fc74679e3b97.gz.bin","chunks":["engine-fc74679e3b97-0.bin","engine-fc74679e3b97-1.bin","engine-fc74679e3b97-2.bin","engine-fc74679e3b97-3.bin","engine-fc74679e3b97-4.bin"],"size":39514754};
     const nativeFetch = window.fetch.bind(window);
-    let wasmPromise;
     const progress = document.getElementById('progress');
     const message = document.getElementById('message');
-    async function getWasm(){
-      if('DecompressionStream' in window){
-        const response = await nativeFetch(engineManifest.gzip);
-        if(!response.ok) throw new Error('引擎资源加载失败，请刷新后重试。');
-        let received=0;
-        const total=Number(response.headers.get('content-length'));
-        const tracking = new TransformStream({transform(chunk,controller){
-          received+=chunk.byteLength;
-          message.textContent=`正在加载工厂资源 · ${(received/1048576).toFixed(1)} MB${total?' / '+(total/1048576).toFixed(1)+' MB':''}`;
-          if(total){progress.max=total;progress.value=received;}
-          controller.enqueue(chunk);
-        }});
-        return new Uint8Array(await new Response(response.body.pipeThrough(tracking).pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
-      }
-      const chunks=await Promise.all(engineManifest.chunks.map(async name=>{
-        const r=await nativeFetch(name); if(!r.ok)throw new Error('引擎资源加载失败');return new Uint8Array(await r.arrayBuffer());
-      }));
-      const result=new Uint8Array(engineManifest.size);let at=0;
-      for(const chunk of chunks){result.set(chunk,at);at+=chunk.length;}return result;
-    }
     window.fetch=async function(input,init){
       const url=new URL(typeof input==='string'?input:(input.url||String(input)),location.href);
       if(url.origin===location.origin&&url.pathname.endsWith('/index.wasm')){
-        wasmPromise??=getWasm();
-        const bytes=await wasmPromise;
-        if(bytes.length!==engineManifest.size)throw new Error('引擎资源不完整，请刷新后重试。');
-        const response=new Response(bytes,{headers:{'Content-Type':'application/wasm','Content-Length':String(bytes.length)}});
-        setTimeout(()=>{wasmPromise=null},0);
-        return response;
+        return ReclaimerWasmLoader.response(engineManifest,{fetch:nativeFetch,progress:(received,total)=>{
+          message.textContent=`正在加载工厂资源 · ${(received/1048576).toFixed(1)} MB${total?' / '+(total/1048576).toFixed(1)+' MB':''}`;
+          if(total){progress.max=total;progress.value=received;}
+        }});
       }
-      if(url.origin===location.origin&&url.pathname.endsWith('/index.pck'))return nativeFetch(input,{...init,cache:'no-cache'});
+      if(url.origin===location.origin&&url.pathname.endsWith('/index.pck')){
+        url.searchParams.set('v','0.3.2');return nativeFetch(url.href,{...init,cache:'no-cache'});
+      }
       return nativeFetch(input,init);
     };
     document.getElementById('canvas').addEventListener('contextmenu',e=>e.preventDefault());
   </script>
-  <script src="index.js?v=0.3.1"></script>
+  <script src="index.js?v=0.3.2"></script>
   <script>
-    const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":730248,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+    const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":732008,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
     const touch=document.getElementById('touch');touch.checked=navigator.maxTouchPoints>0;
     const params=new URLSearchParams(location.search);
+    const silent=document.getElementById('silent');silent.checked=params.get('sound')==='off';
     if(params.get('touch')==='1')touch.checked=true;
     const gate=document.getElementById('gate'),play=document.getElementById('play');
-    const diagnostics={errors:[],logs:[],state:'waiting'};window.reclaimerDiagnostics=diagnostics;
+    const diagnostics={errors:[],errorCount:0,logs:[],samples:[],state:'waiting'};window.reclaimerDiagnostics=diagnostics;
+    function recordError(error){
+      diagnostics.errorCount++;
+      const value=String(error).slice(0,1200);
+      if(diagnostics.errors.at(-1)!==value){diagnostics.errors.push(value);if(diagnostics.errors.length>30)diagnostics.errors.shift();}
+      if(diagnostics.errorCount<=10)console.error(value);
+    }
     function fail(error){
-      diagnostics.state='failed';diagnostics.errors.push(String(error));document.body.dataset.state='failed';
+      diagnostics.state='failed';recordError(error);document.body.dataset.state='failed';
       gate.hidden=false;message.textContent='启动失败：'+String(error)+'\n请刷新后重试，或使用较新的 Chrome / Safari / Firefox。';
       play.textContent='刷新后重试';play.disabled=false;play.onclick=()=>location.reload();progress.hidden=true;
     }
-    window.addEventListener('error',event=>diagnostics.errors.push(event.message));
-    window.addEventListener('unhandledrejection',event=>diagnostics.errors.push(String(event.reason)));
+    window.addEventListener('error',event=>recordError(event.message));
+    window.addEventListener('unhandledrejection',event=>recordError(event.reason));
     async function toggleFullscreen(){
       try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{}
     }
     document.getElementById('fullscreen').onclick=toggleFullscreen;
     let engine;
+    if(params.get('perf')==='1')setInterval(()=>{
+      const sample={seconds:Math.round(performance.now()/1000),jsHeap:performance.memory?.usedJSHeapSize??null,wasmCapacity:engine?.rtenv?.HEAPU8?.byteLength??null,...window.reclaimerGamePerf};
+      diagnostics.samples.push(sample);if(diagnostics.samples.length>120)diagnostics.samples.shift();
+      document.getElementById('performance-report').textContent=JSON.stringify(diagnostics);
+    },5000);
     async function start(){
       play.disabled=true;play.textContent='正在进入…';progress.hidden=false;message.textContent='正在准备工厂资源…';
       diagnostics.state='loading';document.body.dataset.state='loading';
       const missing=Engine.getMissingFeatures({threads:false});
       if(missing.length){fail('浏览器缺少 '+missing.join('、'));return;}
       const args=[];
+      if(params.get('perf')==='1')args.push('--profile');
+      if(params.get('autotest')==='1'&&params.get('upgrades')==='max')args.push('--upgrade-stress');
+      if(params.get('autotest')==='1'&&params.has('soak'))args.push('--soak='+Math.min(3600,Math.max(0,Number(params.get('soak'))||0)));
       if(touch.checked)args.push('--touch');
+      if(silent.checked)args.push('--silent');
       if(params.get('autotest')==='1')args.push('--smoke-test','--weapon='+Math.max(0,Math.min(2,Number(params.get('weapon'))||0)));
-      engine=new Engine({...GODOT_CONFIG,args:args.length?['--',...args]:[],
+      if(params.get('autotest')==='1'&&params.get('audio')==='1')args.push('--audio-smoke');
+      const ios=/iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+      const mobile=touch.checked||ios;
+      const canvas=document.getElementById('canvas');
+      {
+        canvas.width=mobile?960:1440;canvas.height=mobile?600:900;
+        Object.assign(canvas.style,{width:'min(100vw, 160vh)',height:'min(100vh, 62.5vw)',left:'50%',top:'50%',right:'auto',bottom:'auto',transform:'translate(-50%,-50%)'});
+      }
+      const launchArgs=silent.checked?['--audio-driver','Dummy']:[];
+      if(args.length)launchArgs.push('--',...args);
+      engine=new Engine({...GODOT_CONFIG,canvasResizePolicy:0,args:launchArgs,
         onPrint:(...values)=>{const s=values.join(' ');diagnostics.logs.push(s);if(diagnostics.logs.length>100)diagnostics.logs.shift();console.log(s)},
-        onPrintError:(...values)=>{const s=values.join(' ');diagnostics.errors.push(s);console.error(s)},
+        onPrintError:(...values)=>{const s=values.join(' ');recordError(s)},
         onExit:code=>{document.body.dataset.state=code===0?'finished':'failed';diagnostics.state=document.body.dataset.state;}
       });
       try{
