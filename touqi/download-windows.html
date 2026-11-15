@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0a090e">
+<title>下载头七 Windows 版</title>
+<style>
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0a090e;color:#e8e2d4;font:16px/1.6 system-ui,sans-serif}
+main{box-sizing:border-box;width:min(480px,calc(100% - 32px));padding:32px;border:1px solid #5a2a26;background:#16131a;border-radius:14px}
+h1{margin:0 0 8px;font-size:28px}p{margin:8px 0 18px;color:#a89a88}button{padding:12px 20px;border:0;border-radius:8px;background:#a03a34;color:#f2ece0;font:700 16px system-ui;cursor:pointer}button:disabled{opacity:.5;cursor:default}progress{display:block;width:100%;margin:20px 0 8px;accent-color:#a03a34}a{color:#d8a860}
+</style>
+<main><h1>头七 · Windows 版</h1><p>v1.0 · 下载后解压，运行「头七.exe」。压缩包里附有攻略。</p><button id="download">下载 ZIP（约 39 MB）</button><progress id="progress" max="2" value="0" hidden></progress><p id="status" role="status"></p><a href="./">返回在线游玩</a></main>
+<script>
+const button=document.querySelector('#download'),progress=document.querySelector('#progress'),status=document.querySelector('#status');
+const sizes=[20971520,18002017],expected='820472cf768393a8e4ab865e00245e474b18b8808721ed3c766bf69c45c368f5';
+button.addEventListener('click',async()=>{button.disabled=true;progress.hidden=false;progress.value=0;const chunks=[];try{
+for(let i=0;i<sizes.length;i++){status.textContent=`正在下载第 ${i+1}/${sizes.length} 段…`;const response=await fetch(`TouQi-v1.0-Windows.zip.part${i+1}`);if(!response.ok)throw new Error(`第 ${i+1} 段下载失败（${response.status}）`);const data=await response.arrayBuffer();if(data.byteLength!==sizes[i])throw new Error(`第 ${i+1} 段大小不符`);chunks.push(data);progress.value=i+1}
+status.textContent='正在校验文件…';const blob=new Blob(chunks,{type:'application/zip'});const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await blob.arrayBuffer())),b=>b.toString(16).padStart(2,'0')).join('');if(hash!==expected)throw new Error('文件校验失败，请重新下载');
+const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='TouQi-v1.0-Windows.zip';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);status.textContent='下载已开始。';
+}catch(error){status.textContent=error.message;button.disabled=false}});
+</script>
+</html>
